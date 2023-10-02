@@ -8,6 +8,11 @@ from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampl
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from torch import cuda
 
+"""
+source:
+https://colab.research.google.com/github/abhimishra91/transformers-tutorials/blob/master/transformers_summarization_wandb.ipynb#scrollTo=dMZD0QCwnB6w
+"""
+
 device = "cuda" if cuda.is_available() else "cpu"
 
 
@@ -227,7 +232,7 @@ def main():
 
     for epoch in range(config.TRAIN_EPOCHS):
         train(epoch, tokenizer, model, device, training_loader, optimizer)
-    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath("trained-model"))
+    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath("trained-model")) # save model into trained_model/
     # Validation loop and saving the resulting file with predictions and acutals in a dataframe.
     # Saving the dataframe as predictions.csv
     print(
