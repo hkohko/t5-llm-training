@@ -35,14 +35,14 @@ class CustomDataset(Dataset):
             max_length=self.source_len,
             padding="max_length",
             return_tensors="pt",
-            truncation=True
+            truncation=True,
         )
         target = self.tokenizer.batch_encode_plus(
             [text],
             max_length=self.summ_len,
             padding="max_length",
             return_tensors="pt",
-            truncation=True
+            truncation=True,
         )
 
         source_ids = source.get("input_ids").squeeze()
@@ -101,7 +101,6 @@ def train(
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath("my-model"))
 
 
 def validate(epoch, tokenizer, model, device, loader):
