@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "abs-summarization"
+version = "0.1.0"
+description = ""
+authors = ["heko <91366057+hkohko@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+transformers = {extras = ["torch"], version = "^4.33.3"}
+wandb = "^0.15.11"
+pandas = "2.1.0"
+sentencepiece = "^0.1.99"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
