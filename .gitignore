@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 */wandb/
 .idea/
+abs_summarization/trained_model/
 # C extensions
 *.so
 
