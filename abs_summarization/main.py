@@ -71,7 +71,7 @@ def train(
     device: str,
     loader: DataLoader,
     optimizer: Adam,
-    wandb_init
+    wandb_init,
 ) -> None:
     model.train()
     for _, data in enumerate(loader, 0):
@@ -155,6 +155,16 @@ def validate(
     return predictions, actuals
 
 
+def read_training_dataset():
+    df = pd.read_csv(
+        Directories.TRAIN_SETS.joinpath("news_summary.csv"), encoding="latin-1"
+    )
+    df = df[["text", "ctext"]]
+    df.ctext = "summarize: " + df.ctext
+    print(df.head())
+    return df
+
+
 def main(which_llm: str, model_output: str, train_epoch: int = 2):
     # WandB – Initialize a new run
     wandb_init = Wandb_Init(model_output, train_epoch)
@@ -168,16 +178,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     tokenizer: PreTrainedTokenizerBase = T5Tokenizer.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-
-    # Importing and Pre-Processing the domain data
-    # Selecting the needed columns only.
-    # Adding the summarzie text in front of the text. This is to format the dataset similar to how T5 model was trained for summarization task.
-    df = pd.read_csv(
-        Directories.TRAIN_SETS.joinpath("news_summary.csv"), encoding="latin-1"
-    )
-    df = df[["text", "ctext"]]
-    df.ctext = "summarize: " + df.ctext
-    print(df.head())
+    df = read_training_dataset()
 
     # Creation of Dataset and Dataloader
     # Defining the train size. So 80% of the data will be used for training and the rest will be used for validation.
@@ -192,9 +193,17 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
 
     # Creating the Training and Validation dataset for further creation of Dataloader
     training_set = CustomDataset(
-        train_dataset, tokenizer, wandb_init._config.MAX_LEN, wandb_init._config.SUMMARY_LEN
+        train_dataset,
+        tokenizer,
+        wandb_init._config.MAX_LEN,
+        wandb_init._config.SUMMARY_LEN,
     )
-    val_set = CustomDataset(val_dataset, tokenizer, wandb_init._config.MAX_LEN, wandb_init._config.SUMMARY_LEN)
+    val_set = CustomDataset(
+        val_dataset,
+        tokenizer,
+        wandb_init._config.MAX_LEN,
+        wandb_init._config.SUMMARY_LEN,
+    )
 
     # Defining the parameters for creation of dataloaders
     train_params = {
