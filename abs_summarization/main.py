@@ -165,6 +165,44 @@ def read_training_dataset():
     return df
 
 
+def start_validation(
+    wandb_init,
+    epoch: int,
+    tokenizer: PreTrainedTokenizerBase,
+    model: tuple,
+    device: str,
+    val_loader: DataLoader,
+):
+    # Validation loop and saving the resulting file with predictions and acutals in a dataframe.
+    # Saving the dataframe as predictions.csv
+    print(
+        "Now generating summaries on our fine tuned model for the validation dataset and saving it in a dataframe"
+    )
+    for epoch in range(wandb_init._config.VAL_EPOCHS):
+        predictions, actuals = validate(epoch, tokenizer, model, device, val_loader)
+        final_df = pd.DataFrame({"Generated Text": predictions, "Actual Text": actuals})
+        final_df.to_csv("./models/predictions.csv")
+        print("Output Files generated for review")
+
+
+def start_training(
+    wandb_init,
+    epoch: int,
+    tokenizer: PreTrainedTokenizerBase,
+    model: tuple,
+    device: str,
+    training_loader: DataLoader,
+    optimizer: Adam,
+    model_output: str,
+):
+    for epoch in range(wandb_init._config.TRAIN_EPOCHS):
+        train(epoch, tokenizer, model, device, training_loader, optimizer, wandb_init)
+
+
+def save_model() -> None:
+    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
+
+
 def main(which_llm: str, model_output: str, train_epoch: int = 2):
     # WandB – Initialize a new run
     wandb_init = Wandb_Init(model_output, train_epoch)
@@ -238,22 +276,18 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     wandb_init.wandb.watch(model, log="all")
     # Training loop
     print("Initiating Fine-Tuning for the model on our dataset")
-
-    for epoch in range(wandb_init._config.TRAIN_EPOCHS):
-        train(epoch, tokenizer, model, device, training_loader, optimizer, wandb_init)
-    model.save_pretrained(
-        Directories.TRAINED_MODEL_DIR.joinpath(model_output)
-    )  # save model into trained_model/
-    # Validation loop and saving the resulting file with predictions and acutals in a dataframe.
-    # Saving the dataframe as predictions.csv
-    print(
-        "Now generating summaries on our fine tuned model for the validation dataset and saving it in a dataframe"
+    start_training(
+        wandb_init,
+        train_epoch,
+        tokenizer,
+        model,
+        device,
+        training_loader,
+        optimizer,
+        model_output,
     )
-    for epoch in range(wandb_init._config.VAL_EPOCHS):
-        predictions, actuals = validate(epoch, tokenizer, model, device, val_loader)
-        final_df = pd.DataFrame({"Generated Text": predictions, "Actual Text": actuals})
-        final_df.to_csv("./models/predictions.csv")
-        print("Output Files generated for review")
+    save_model()
+    start_validation(wandb_init, epoch, tokenizer, model, device, val_loader)
 
 
 if __name__ == "__main__":
