@@ -127,15 +127,15 @@ def start_validation(
     device: str,
     val_loader: DataLoader,
 ):
-    # Validation loop and saving the resulting file with predictions and acutals in a dataframe.
-    # Saving the dataframe as predictions.csv
     print(
         "Now generating summaries on our fine tuned model for the validation dataset and saving it in a dataframe"
     )
     for epoch in range(wandb_init._config.VAL_EPOCHS):
         predictions, actuals = validate(epoch, tokenizer, model, device, val_loader)
         final_df = pd.DataFrame({"Generated Text": predictions, "Actual Text": actuals})
-        final_df.to_csv("./models/predictions.csv")
+        final_df.to_csv(
+            "./models/predictions.csv"
+        )  # Saving the dataframe as predictions.csv
         print("Output Files generated for review")
 
 
@@ -149,6 +149,7 @@ def start_training(
     optimizer: Adam,
     model_output: str,
 ):
+    print("Initiating Fine-Tuning for the model on our dataset")
     for epoch in range(wandb_init._config.TRAIN_EPOCHS):
         train(epoch, tokenizer, model, device, training_loader, optimizer, wandb_init)
 
@@ -159,34 +160,31 @@ def save_model(model_output: str, model: tuple, save: bool = True) -> None:
 
 
 def main(which_llm: str, model_output: str, train_epoch: int = 2):
-    # WandB – Initialize a new run
+    # start wandb
     wandb_init = Wandb_Init(model_output, train_epoch)
 
     # Set random seeds and deterministic pytorch for reproducibility
-    torch.manual_seed(wandb_init._config.SEED)  # pytorch random seed
-    np.random.seed(wandb_init._config.SEED)  # numpy random seed
+    torch.manual_seed(wandb_init._config.SEED)
+    np.random.seed(wandb_init._config.SEED)
     torch.backends.cudnn.deterministic = True
 
-    # tokenzier for encoding the text
+    # define tokenizer and model
     tokenizer: PreTrainedTokenizerBase = T5Tokenizer.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-    df = read_training_dataset()
-
-    training_set, val_set, train_params, val_params = create_dataset(
-        wandb_init, df, tokenizer
-    )
-
-    # Creation of Dataloaders for testing and validation. This will be used down for training and validation stage for the model.
-    training_loader = DataLoader(training_set, **train_params)
-    val_loader = DataLoader(val_set, **val_params)
-
-    # Defining the model. We are using t5-base model and added a Language model layer on top for generation of Summary.
-    # Further this model is sent to device (GPU/TPU) for using the hardware.
     model: tuple = T5ForConditionalGeneration.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-    model = model.to(device)
+    model = model.to(device)  # send model to device
+
+    # create a custom dataset
+    # load them with DataLoader
+    df = read_training_dataset()
+    training_set, val_set, train_params, val_params = create_dataset(
+        wandb_init, df, tokenizer
+    )
+    training_loader = DataLoader(training_set, **train_params)
+    val_loader = DataLoader(val_set, **val_params)
 
     # Defining the optimizer that will be used to tune the weights of the network in the training session.
     optimizer: Adam = torch.optim.Adam(
@@ -195,8 +193,8 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
 
     # Log metrics with wandb
     wandb_init.wandb.watch(model, log="all")
-    # Training loop
-    print("Initiating Fine-Tuning for the model on our dataset")
+
+    # train, save model, validate
     start_training(
         wandb_init,
         train_epoch,
@@ -208,8 +206,10 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
         model_output,
     )
     save_model(model_output, model, True)
-    start_validation(wandb_init, epoch, tokenizer, model, device, val_loader)
+    start_validation(
+        wandb_init, wandb_init._config.VAL_EPOCHS, tokenizer, model, device, val_loader
+    )
 
 
 if __name__ == "__main__":
-    main("t5-small", train_epoch=2, model_output="trained-model-t5-small-test1")
+    main("t5-small", train_epoch=1, model_output="trained-model-t5-small-test1")
