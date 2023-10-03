@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 import torch
-import training
-import validation
-from custom_dataset import create_dataset
-from init_wandb import Wandb_Init
-from constants import Directories
+import abs_summarization.training as training
+import abs_summarization.validation as validation
+from .custom_dataset import create_dataset
+from .init_wandb import Wandb_Init
+from .constants import Directories
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.modeling_utils import PreTrainedModel
 from torch.optim import Adam
@@ -79,7 +79,3 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     validation.start_validation(
         wandb_init, wandb_init._config.VAL_EPOCHS, tokenizer, model, device, val_loader
     )
-
-
-if __name__ == "__main__":
-    main("t5-small", train_epoch=1, model_output="trained-model-t5-small-test1")
