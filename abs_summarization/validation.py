@@ -17,7 +17,7 @@ def validate(
     predictions = []
     actuals = []
     with torch.no_grad():
-        for _, data in enumerate(loader, 0):
+        for idx, data in enumerate(loader, 0):
             y = data["target_ids"].to(device, dtype=torch.long)
             ids = data["source_ids"].to(device, dtype=torch.long)
             mask = data["source_mask"].to(device, dtype=torch.long)
@@ -43,8 +43,8 @@ def validate(
                 )
                 for t in y
             ]
-            if _ % 100 == 0:
-                print(f"Completed {_}")
+            if idx % 100 == 0:
+                print(f"Completed {idx}")
 
             predictions.extend(preds)
             actuals.extend(target)
