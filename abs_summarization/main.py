@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
 import torch
+import training
 from custom_dataset import create_dataset
 from init_wandb import Wandb_Init
 from constants import Directories
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers.modeling_utils import PreTrainedModel
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from transformers import T5Tokenizer, T5ForConditionalGeneration
@@ -16,52 +18,6 @@ https://colab.research.google.com/github/abhimishra91/transformers-tutorials/blo
 """
 
 device = "cuda" if cuda.is_available() else "cpu"
-
-
-def train(
-    epoch: int,
-    tokenizer: PreTrainedTokenizerBase,
-    model: tuple,
-    device: str,
-    loader: DataLoader,
-    optimizer: Adam,
-    wandb_init,
-) -> None:
-    model.train()
-    for _, data in enumerate(loader, 0):
-        y = data.get("target_ids").to(device, dtype=torch.long)
-        y_ids = y[:, :-1].contiguous()
-        lm_labels = y[:, 1:].clone().detach()
-        lm_labels[y[:, 1:] == tokenizer.pad_token_id] = -100
-        ids = data.get("source_ids").to(device, dtype=torch.long)
-        mask = data.get("source_mask").to(device, dtype=torch.long)
-
-        # https://github.com/priya-dwivedi/Deep-Learning/issues/137
-        # lm_labels -> labels
-        outputs = model(
-            input_ids=ids,
-            attention_mask=mask,
-            decoder_input_ids=y_ids,
-            labels=lm_labels,
-        )
-
-        loss = outputs[0]
-
-        if _ % 10 == 0:
-            try:
-                wandb_init.wandb.log({"Training Loss": loss.item()})
-            except RuntimeError:
-                pass
-
-        if _ % 500 == 0:
-            try:
-                print(f"Epoch: {epoch}, Loss: {loss.item()}")
-            except RuntimeError:
-                pass
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
 
 
 def validate(
@@ -139,21 +95,6 @@ def start_validation(
         print("Output Files generated for review")
 
 
-def start_training(
-    wandb_init,
-    epoch: int,
-    tokenizer: PreTrainedTokenizerBase,
-    model: tuple,
-    device: str,
-    training_loader: DataLoader,
-    optimizer: Adam,
-    model_output: str,
-):
-    print("Initiating Fine-Tuning for the model on our dataset")
-    for epoch in range(wandb_init._config.TRAIN_EPOCHS):
-        train(epoch, tokenizer, model, device, training_loader, optimizer, wandb_init)
-
-
 def save_model(model_output: str, model: tuple, save: bool = True) -> None:
     if save:
         model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
@@ -172,7 +113,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     tokenizer: PreTrainedTokenizerBase = T5Tokenizer.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-    model: tuple = T5ForConditionalGeneration.from_pretrained(
+    model: PreTrainedModel = T5ForConditionalGeneration.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
     model = model.to(device)  # send model to device
@@ -195,15 +136,8 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     wandb_init.wandb.watch(model, log="all")
 
     # train, save model, validate
-    start_training(
-        wandb_init,
-        train_epoch,
-        tokenizer,
-        model,
-        device,
-        training_loader,
-        optimizer,
-        model_output,
+    training.start_training(
+        wandb_init, tokenizer, model, device, training_loader, optimizer
     )
     save_model(model_output, model, True)
     start_validation(
