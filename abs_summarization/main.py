@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-import wandb
 import torch
 import torch.nn.functional as F
+from init_wandb import Wandb_Init
 from constants import Directories
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from torch.optim import Adam
@@ -157,23 +157,11 @@ def validate(
 
 def main(which_llm: str, model_output: str, train_epoch: int = 2):
     # WandB – Initialize a new run
-    wandb.init(project="t5-small_training")
-
-    # WandB – Config is a variable that holds and saves hyperparameters and inputs
-    # Defining some key variables that will be used later on in the training
-    config = wandb.config  # Initialize config
-    config.TRAIN_BATCH_SIZE = 2  # input batch size for training (default: 64)
-    config.VALID_BATCH_SIZE = 2  # input batch size for testing (default: 1000)
-    config.TRAIN_EPOCHS = train_epoch  # number of epochs to train (default: 10)
-    config.VAL_EPOCHS = 1
-    config.LEARNING_RATE = 1e-4  # learning rate (default: 0.01)
-    config.SEED = 42  # random seed (default: 42)
-    config.MAX_LEN = 512
-    config.SUMMARY_LEN = 150
+    wandb_init = Wandb_Init(model_output, train_epoch)
 
     # Set random seeds and deterministic pytorch for reproducibility
-    torch.manual_seed(config.SEED)  # pytorch random seed
-    np.random.seed(config.SEED)  # numpy random seed
+    torch.manual_seed(wandb_init._config.SEED)  # pytorch random seed
+    np.random.seed(wandb_init._config.SEED)  # numpy random seed
     torch.backends.cudnn.deterministic = True
 
     # tokenzier for encoding the text
@@ -194,7 +182,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     # Creation of Dataset and Dataloader
     # Defining the train size. So 80% of the data will be used for training and the rest will be used for validation.
     train_size = 0.8
-    train_dataset = df.sample(frac=train_size, random_state=config.SEED)
+    train_dataset = df.sample(frac=train_size, random_state=wandb_init._config.SEED)
     val_dataset = df.drop(train_dataset.index).reset_index(drop=True)
     train_dataset = train_dataset.reset_index(drop=True)
 
@@ -204,19 +192,19 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
 
     # Creating the Training and Validation dataset for further creation of Dataloader
     training_set = CustomDataset(
-        train_dataset, tokenizer, config.MAX_LEN, config.SUMMARY_LEN
+        train_dataset, tokenizer, wandb_init._config.MAX_LEN, wandb_init._config.SUMMARY_LEN
     )
-    val_set = CustomDataset(val_dataset, tokenizer, config.MAX_LEN, config.SUMMARY_LEN)
+    val_set = CustomDataset(val_dataset, tokenizer, wandb_init._config.MAX_LEN, wandb_init._config.SUMMARY_LEN)
 
     # Defining the parameters for creation of dataloaders
     train_params = {
-        "batch_size": config.TRAIN_BATCH_SIZE,
+        "batch_size": wandb_init._config.TRAIN_BATCH_SIZE,
         "shuffle": True,
         "num_workers": 0,
     }
 
     val_params = {
-        "batch_size": config.VALID_BATCH_SIZE,
+        "batch_size": wandb_init._config.VALID_BATCH_SIZE,
         "shuffle": False,
         "num_workers": 0,
     }
@@ -234,7 +222,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
 
     # Defining the optimizer that will be used to tune the weights of the network in the training session.
     optimizer: Adam = torch.optim.Adam(
-        params=model.parameters(), lr=config.LEARNING_RATE
+        params=model.parameters(), lr=wandb_init._config.LEARNING_RATE
     )
 
     # Log metrics with wandb
