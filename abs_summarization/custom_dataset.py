@@ -1,5 +1,5 @@
-from torch.utils.data import Dataset
 from torch import long
+from torch.utils.data import Dataset
 
 
 class CustomDataset(Dataset):
