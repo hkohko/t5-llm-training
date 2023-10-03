@@ -3,7 +3,8 @@ import wandb
 
 class Wandb_Init:
     def __init__(self, model_output: str, train_epoch: int):
-        wandb.init(project=model_output)
+        self.wandb = wandb
+        self.wandb.init(project=model_output)
         # WandB – Config is a variable that holds and saves hyperparameters and inputs
         # Defining some key variables that will be used later on in the training
         self._config = wandb.config  # Initialize config

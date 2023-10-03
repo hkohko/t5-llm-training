@@ -1,12 +1,11 @@
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as F
 from init_wandb import Wandb_Init
 from constants import Directories
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from torch.optim import Adam
-from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampler
+from torch.utils.data import Dataset, DataLoader
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from torch import cuda
 
@@ -55,7 +54,7 @@ class CustomDataset(Dataset):
         source_ids = source.get("input_ids").squeeze()
         source_mask = source.get("attention_mask").squeeze()
         target_ids = target.get("input_ids").squeeze()
-        target_mask = target.get("attention_mask").squeeze()
+        target.get("attention_mask").squeeze()
 
         return {
             "source_ids": source_ids.to(dtype=torch.long),
@@ -72,6 +71,7 @@ def train(
     device: str,
     loader: DataLoader,
     optimizer: Adam,
+    wandb_init
 ) -> None:
     model.train()
     for _, data in enumerate(loader, 0):
@@ -95,7 +95,7 @@ def train(
 
         if _ % 10 == 0:
             try:
-                wandb.log({"Training Loss": loss.item()})
+                wandb_init.wandb.log({"Training Loss": loss.item()})
             except RuntimeError:
                 pass
 
@@ -226,12 +226,12 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     )
 
     # Log metrics with wandb
-    wandb.watch(model, log="all")
+    wandb_init.wandb.watch(model, log="all")
     # Training loop
     print("Initiating Fine-Tuning for the model on our dataset")
 
-    for epoch in range(config.TRAIN_EPOCHS):
-        train(epoch, tokenizer, model, device, training_loader, optimizer)
+    for epoch in range(wandb_init._config.TRAIN_EPOCHS):
+        train(epoch, tokenizer, model, device, training_loader, optimizer, wandb_init)
     model.save_pretrained(
         Directories.TRAINED_MODEL_DIR.joinpath(model_output)
     )  # save model into trained_model/
@@ -240,7 +240,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     print(
         "Now generating summaries on our fine tuned model for the validation dataset and saving it in a dataframe"
     )
-    for epoch in range(config.VAL_EPOCHS):
+    for epoch in range(wandb_init._config.VAL_EPOCHS):
         predictions, actuals = validate(epoch, tokenizer, model, device, val_loader)
         final_df = pd.DataFrame({"Generated Text": predictions, "Actual Text": actuals})
         final_df.to_csv("./models/predictions.csv")
