@@ -1,4 +1,5 @@
 import torch
+from init_wandb import Wandb_Init
 from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from torch.utils.data import DataLoader
@@ -50,7 +51,7 @@ def validate(
 
 
 def start_validation(
-    wandb_init,
+    wandb_init: Wandb_Init,
     epoch: int,
     tokenizer: PreTrainedTokenizerBase,
     model: PreTrainedModel,

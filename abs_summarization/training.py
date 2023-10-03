@@ -3,6 +3,7 @@ from transformers.modeling_utils import PreTrainedModel
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch import long
+from init_wandb import Wandb_Init
 
 
 def train(
@@ -12,7 +13,7 @@ def train(
     device: str,
     loader: DataLoader,
     optimizer: Adam,
-    wandb_init,
+    wandb_init: Wandb_Init,
 ) -> None:
     model.train()
     for _, data in enumerate(loader, 0):
@@ -52,9 +53,9 @@ def train(
 
 
 def start_training(
-    wandb_init,
+    wandb_init: Wandb_Init,
     tokenizer: PreTrainedTokenizerBase,
-    model,
+    model: PreTrainedModel,
     device: str,
     training_loader: DataLoader,
     optimizer: Adam,
