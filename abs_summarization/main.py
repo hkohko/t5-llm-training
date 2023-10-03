@@ -4,6 +4,8 @@ import wandb
 import torch
 import torch.nn.functional as F
 from constants import Directories
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader, RandomSampler, SequentialSampler
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from torch import cuda
@@ -64,13 +66,13 @@ class CustomDataset(Dataset):
 
 
 def train(
-    epoch,
-    tokenizer: T5Tokenizer,
-    model: T5ForConditionalGeneration,
-    device,
-    loader,
-    optimizer: torch.optim.Adam,
-):
+    epoch: int,
+    tokenizer: PreTrainedTokenizerBase,
+    model: tuple,
+    device: str,
+    loader: DataLoader,
+    optimizer: Adam,
+) -> None:
     model.train()
     for _, data in enumerate(loader, 0):
         y = data.get("target_ids").to(device, dtype=torch.long)
@@ -108,7 +110,13 @@ def train(
         optimizer.step()
 
 
-def validate(epoch, tokenizer, model, device, loader):
+def validate(
+    epoch: int,
+    tokenizer: PreTrainedTokenizerBase,
+    model: tuple,
+    device: str,
+    loader: DataLoader,
+) -> tuple[list[str], list[str]]:
     model.eval()
     predictions = []
     actuals = []
@@ -147,16 +155,16 @@ def validate(epoch, tokenizer, model, device, loader):
     return predictions, actuals
 
 
-def main():
+def main(which_llm: str, model_output: str, train_epoch: int = 2):
     # WandB – Initialize a new run
-    wandb.init(project="transformers_tutorials_summarization")
+    wandb.init(project="t5-small_training")
 
     # WandB – Config is a variable that holds and saves hyperparameters and inputs
     # Defining some key variables that will be used later on in the training
     config = wandb.config  # Initialize config
     config.TRAIN_BATCH_SIZE = 2  # input batch size for training (default: 64)
     config.VALID_BATCH_SIZE = 2  # input batch size for testing (default: 1000)
-    config.TRAIN_EPOCHS = 1  # number of epochs to train (default: 10)
+    config.TRAIN_EPOCHS = train_epoch  # number of epochs to train (default: 10)
     config.VAL_EPOCHS = 1
     config.LEARNING_RATE = 1e-4  # learning rate (default: 0.01)
     config.SEED = 42  # random seed (default: 42)
@@ -169,7 +177,9 @@ def main():
     torch.backends.cudnn.deterministic = True
 
     # tokenzier for encoding the text
-    tokenizer = T5Tokenizer.from_pretrained(Directories.LLM_DIR.joinpath("t5-base"))
+    tokenizer: PreTrainedTokenizerBase = T5Tokenizer.from_pretrained(
+        Directories.LLM_DIR.joinpath(which_llm)
+    )
 
     # Importing and Pre-Processing the domain data
     # Selecting the needed columns only.
@@ -217,13 +227,15 @@ def main():
 
     # Defining the model. We are using t5-base model and added a Language model layer on top for generation of Summary.
     # Further this model is sent to device (GPU/TPU) for using the hardware.
-    model = T5ForConditionalGeneration.from_pretrained(
-        Directories.LLM_DIR.joinpath("t5-base")
+    model: tuple = T5ForConditionalGeneration.from_pretrained(
+        Directories.LLM_DIR.joinpath(which_llm)
     )
     model = model.to(device)
 
     # Defining the optimizer that will be used to tune the weights of the network in the training session.
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=config.LEARNING_RATE)
+    optimizer: Adam = torch.optim.Adam(
+        params=model.parameters(), lr=config.LEARNING_RATE
+    )
 
     # Log metrics with wandb
     wandb.watch(model, log="all")
@@ -232,7 +244,9 @@ def main():
 
     for epoch in range(config.TRAIN_EPOCHS):
         train(epoch, tokenizer, model, device, training_loader, optimizer)
-    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath("trained-model")) # save model into trained_model/
+    model.save_pretrained(
+        Directories.TRAINED_MODEL_DIR.joinpath(model_output)
+    )  # save model into trained_model/
     # Validation loop and saving the resulting file with predictions and acutals in a dataframe.
     # Saving the dataframe as predictions.csv
     print(
@@ -246,4 +260,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main("t5-small", train_epoch=2, model_output="trained-model-t5-small-test1")
