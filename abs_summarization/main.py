@@ -153,8 +153,9 @@ def start_training(
         train(epoch, tokenizer, model, device, training_loader, optimizer, wandb_init)
 
 
-def save_model() -> None:
-    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
+def save_model(save: bool = True) -> None:
+    if save:
+        model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
 
 
 def main(which_llm: str, model_output: str, train_epoch: int = 2):
@@ -206,7 +207,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
         optimizer,
         model_output,
     )
-    save_model()
+    save_model(True)
     start_validation(wandb_init, epoch, tokenizer, model, device, val_loader)
 
 
