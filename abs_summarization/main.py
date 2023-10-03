@@ -1,39 +1,37 @@
 import numpy as np
 import pandas as pd
 import torch
-import abs_summarization.training as training
-import abs_summarization.validation as validation
-from .custom_dataset import create_dataset
-from .init_wandb import Wandb_Init
-from .constants import Directories
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
-from transformers.modeling_utils import PreTrainedModel
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import T5Tokenizer, T5ForConditionalGeneration
-from torch import cuda
+from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers.modeling_utils import PreTrainedModel
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+
+import abs_summarization.training as training
+import abs_summarization.validation as validation
+from .constants import DEBUG, DEVICE, Directories
+from .custom_dataset import create_dataset
+from .init_wandb import Wandb_Init
 
 """
 source:
 https://colab.research.google.com/github/abhimishra91/transformers-tutorials/blob/master/transformers_summarization_wandb.ipynb#scrollTo=dMZD0QCwnB6w
 """
 
-device = "cuda" if cuda.is_available() else "cpu"
 
-
-def read_training_dataset():
+def read_training_dataset() -> pd.DataFrame:
     df = pd.read_csv(
         Directories.TRAIN_SETS.joinpath("news_summary.csv"), encoding="latin-1"
     )
     df = df[["text", "ctext"]]
     df.ctext = "summarize: " + df.ctext
-    print(df.head())
     return df
 
 
-def save_model(model_output: str, model: tuple, save: bool = True) -> None:
-    if save:
-        model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
+def save_model(model_output: str, model: PreTrainedModel) -> None:
+    if DEBUG:
+        return
+    model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
 
 
 def main(which_llm: str, model_output: str, train_epoch: int = 2):
@@ -52,7 +50,7 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     model: PreTrainedModel = T5ForConditionalGeneration.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-    model = model.to(device)  # send model to device
+    model = model.to(DEVICE)  # send model to device
 
     # create a custom dataset
     # load them with DataLoader
@@ -73,9 +71,9 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
 
     # train, save model, validate
     training.start_training(
-        wandb_init, tokenizer, model, device, training_loader, optimizer
+        wandb_init, tokenizer, model, DEVICE, training_loader, optimizer
     )
-    save_model(model_output, model, True)
+    save_model(model_output, model)
     validation.start_validation(
-        wandb_init, wandb_init._config.VAL_EPOCHS, tokenizer, model, device, val_loader
+        wandb_init, wandb_init._config.VAL_EPOCHS, tokenizer, model, DEVICE, val_loader
     )

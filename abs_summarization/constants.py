@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
+from torch import cuda
+
 
 @dataclass
 class Directories:
@@ -9,3 +11,7 @@ class Directories:
     LLM_DIR = PROJ_DIR.parents[2].joinpath("#LLM_MODELS")
     RESULT_DIR = PROJ_DIR.joinpath("model")
     TRAINED_MODEL_DIR = PROJ_DIR.joinpath("trained_model")
+
+
+DEVICE = "cuda" if cuda.is_available() else "cpu"
+DEBUG = False
