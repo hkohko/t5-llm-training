@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from transformers import MT5ForConditionalGeneration as ForConditionalGeneration
 from transformers import MT5Tokenizer as Tokenizer
 from transformers.modeling_utils import PreTrainedModel
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers import PreTrainedTokenizer
 
 import abs_summarization.training as training
 import abs_summarization.validation as validation
@@ -20,8 +20,8 @@ https://colab.research.google.com/github/abhimishra91/transformers-tutorials/blo
 """
 
 
-def read_training_dataset() -> pd.DataFrame:
-    df = pd.read_csv(TRAINING_SET_KEYS.get(LANG), encoding=CSV_ENCODING.get(LANG))
+def read_training_dataset(file: str) -> pd.DataFrame:
+    df = pd.read_csv(file, encoding=CSV_ENCODING.get(LANG))
     df = df[["text", "ctext"]]
     df.ctext = PREFIX_KEYS.get(LANG) + df.ctext
     return df
@@ -41,7 +41,8 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     torch.backends.cudnn.deterministic = True
 
     # define tokenizer and model
-    tokenizer: PreTrainedTokenizerBase = Tokenizer.from_pretrained(
+    # https://huggingface.co/docs/transformers/model_doc/mt5#transformers.T5Tokenizer
+    tokenizer: PreTrainedTokenizer = Tokenizer.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
     model: PreTrainedModel = ForConditionalGeneration.from_pretrained(
@@ -51,7 +52,9 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
 
     # create a custom dataset
     # load them with DataLoader
-    df = read_training_dataset()
+    df = read_training_dataset(
+        str(Directories.TRAIN_SETS_ID.joinpath("id_train_0.csv"))
+    )
     training_set, val_set, train_params, val_params = create_dataset(
         wandb_init, df, tokenizer
     )
