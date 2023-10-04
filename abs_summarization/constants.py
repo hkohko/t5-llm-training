@@ -11,11 +11,11 @@ class Directories:
     LLM_DIR = PROJ_DIR.parents[2].joinpath("#LLM_MODELS")
     RESULT_DIR = PROJ_DIR.joinpath("model")
     TRAINED_MODEL_DIR = PROJ_DIR.joinpath("trained_model")
-    TRAIN_SETS_ID = TRAIN_SETS.joinpath("id_training_data")
+    TRAIN_SETS_ID = TRAIN_SETS.joinpath("id_training_data", "train_files")
 
 
 DEVICE = "cuda" if cuda.is_available() else "cpu"
-DEBUG = False
+DEBUG = True
 
 LANG = "ID"
 
