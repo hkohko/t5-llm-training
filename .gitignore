@@ -7,6 +7,8 @@ wandb/
 .idea/
 abs_summarization/trained_model/
 abs_summarization/training_set/
+*.jsonl
+*.tar
 # C extensions
 *.so
 

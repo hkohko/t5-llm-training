@@ -3,13 +3,14 @@ import pandas as pd
 import torch
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import MT5ForConditionalGeneration as ForConditionalGeneration
+from transformers import MT5Tokenizer as Tokenizer
 from transformers.modeling_utils import PreTrainedModel
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers import PreTrainedTokenizer
 
 import abs_summarization.training as training
 import abs_summarization.validation as validation
-from .constants import DEBUG, DEVICE, Directories
+from .constants import *
 from .custom_dataset import create_dataset
 from .init_wandb import Wandb_Init
 
@@ -19,18 +20,14 @@ https://colab.research.google.com/github/abhimishra91/transformers-tutorials/blo
 """
 
 
-def read_training_dataset() -> pd.DataFrame:
-    df = pd.read_csv(
-        Directories.TRAIN_SETS.joinpath("news_summary.csv"), encoding="latin-1"
-    )
+def read_training_dataset(file: str) -> pd.DataFrame:
+    df = pd.read_csv(file, encoding=CSV_ENCODING.get(LANG))
     df = df[["text", "ctext"]]
-    df.ctext = "summarize: " + df.ctext
+    df.ctext = PREFIX_KEYS.get(LANG) + df.ctext
     return df
 
 
 def save_model(model_output: str, model: PreTrainedModel) -> None:
-    if DEBUG:
-        return
     model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
 
 
@@ -44,17 +41,20 @@ def main(which_llm: str, model_output: str, train_epoch: int = 2):
     torch.backends.cudnn.deterministic = True
 
     # define tokenizer and model
-    tokenizer: PreTrainedTokenizerBase = T5Tokenizer.from_pretrained(
+    # https://huggingface.co/docs/transformers/model_doc/mt5#transformers.T5Tokenizer
+    tokenizer: PreTrainedTokenizer = Tokenizer.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-    model: PreTrainedModel = T5ForConditionalGeneration.from_pretrained(
+    model: PreTrainedModel = ForConditionalGeneration.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
     model = model.to(DEVICE)  # send model to device
 
     # create a custom dataset
     # load them with DataLoader
-    df = read_training_dataset()
+    df = read_training_dataset(
+        str(Directories.TRAIN_SETS_ID.joinpath("id_train_0.csv"))
+    )
     training_set, val_set, train_params, val_params = create_dataset(
         wandb_init, df, tokenizer
     )
