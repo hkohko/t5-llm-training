@@ -6,6 +6,7 @@ __pycache__/
 wandb/
 .idea/
 abs_summarization/trained_model/
+abs_summarization/training_set/
 # C extensions
 *.so
 
