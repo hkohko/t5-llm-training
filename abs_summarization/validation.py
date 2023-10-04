@@ -4,6 +4,7 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 from .init_wandb import Wandb_Init
+from .constants import DEBUG
 
 
 def validate(
@@ -62,6 +63,8 @@ def start_validation(
     print(
         "Now generating summaries on our fine tuned model for the validation dataset and saving it in a dataframe"
     )
+    if DEBUG:
+        return
     for epoch in range(wandb_init._config.VAL_EPOCHS):
         predictions, actuals = validate(epoch, tokenizer, model, device, val_loader)
         final_df = pd.DataFrame({"Generated Text": predictions, "Actual Text": actuals})
