@@ -82,8 +82,6 @@ def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_mod
 def main_loop():
     model_name = ("finetuned-mt5-id")
     for idx, files in enumerate(Path(Directories.TRAIN_SETS_ID).iterdir()):
-        if idx > 19:
-            break
         finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath(f"{model_name}-{idx - 1}")
         if idx == 0:
             finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath("trained-mt5-ID-test")
