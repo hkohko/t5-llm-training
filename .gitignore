@@ -7,6 +7,7 @@ wandb/
 .idea/
 abs_summarization/trained_model/
 abs_summarization/training_set/
+abs_summarization/tokenizer/dataset/
 *.jsonl
 *.tar
 # C extensions
