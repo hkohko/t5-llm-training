@@ -1,19 +1,9 @@
-import pandas as pd
 from torch import long
 from torch.utils.data import Dataset
-from transformers import PreTrainedTokenizer
-
-from abs_summarization.init_wandb import Wandb_Init
 
 
 class CustomDataset(Dataset):
-    def __init__(
-        self,
-        dataframe: pd.DataFrame,
-        tokenizer: PreTrainedTokenizer,
-        source_len: int,
-        summ_len: int,
-    ):
+    def __init__(self, dataframe, tokenizer, source_len, summ_len):
         self.tokenizer = tokenizer
         self.data = dataframe
         self.source_len = source_len
@@ -24,7 +14,7 @@ class CustomDataset(Dataset):
     def __len__(self):
         return len(self.text)
 
-    def __getitem__(self, item: int):
+    def __getitem__(self, item):
         ctext = str(self.ctext[item])
         ctext = " ".join(ctext.split())
 
@@ -59,12 +49,10 @@ class CustomDataset(Dataset):
         }
 
 
-def create_dataset(
-    wandb_init: Wandb_Init, df: pd.DataFrame, tokenizer: PreTrainedTokenizer
-):
+def create_dataset(wandb_init, df, tokenizer):
     # Creation of Dataset and Dataloader
     # Defining the train size. So 80% of the data will be used for training and the rest will be used for validation.
-    train_size = 0.9
+    train_size = 0.8
     train_dataset = df.sample(frac=train_size, random_state=wandb_init._config.SEED)
     val_dataset = df.drop(train_dataset.index).reset_index(drop=True)
     train_dataset = train_dataset.reset_index(drop=True)

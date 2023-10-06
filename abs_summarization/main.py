@@ -1,17 +1,15 @@
 import numpy as np
 import pandas as pd
 import torch
-from pathlib import Path
 from torch.optim import Adam
 from torch.utils.data import DataLoader
-from transformers import MT5ForConditionalGeneration as ForConditionalGeneration
-from transformers import MT5Tokenizer as Tokenizer
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 from transformers.modeling_utils import PreTrainedModel
-from transformers import PreTrainedTokenizer
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 import abs_summarization.training as training
 import abs_summarization.validation as validation
-from .constants import *
+from .constants import DEBUG, DEVICE, Directories
 from .custom_dataset import create_dataset
 from .init_wandb import Wandb_Init
 
@@ -21,18 +19,22 @@ https://colab.research.google.com/github/abhimishra91/transformers-tutorials/blo
 """
 
 
-def read_training_dataset(file: str) -> pd.DataFrame:
-    df = pd.read_csv(file, encoding=CSV_ENCODING.get(LANG))
+def read_training_dataset() -> pd.DataFrame:
+    df = pd.read_csv(
+        Directories.TRAIN_SETS.joinpath("news_summary.csv"), encoding="latin-1"
+    )
     df = df[["text", "ctext"]]
-    df.ctext = PREFIX_KEYS.get(LANG) + df.ctext
+    df.ctext = "summarize: " + df.ctext
     return df
 
 
 def save_model(model_output: str, model: PreTrainedModel) -> None:
+    if DEBUG:
+        return
     model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
 
 
-def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_model: PurePath, train_epoch: int = 2):
+def main(which_llm: str, model_output: str, train_epoch: int = 2):
     # start wandb
     wandb_init = Wandb_Init(model_output, train_epoch)
 
@@ -42,20 +44,17 @@ def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_mod
     torch.backends.cudnn.deterministic = True
 
     # define tokenizer and model
-    # https://huggingface.co/docs/transformers/model_doc/mt5#transformers.T5Tokenizer
-    tokenizer: PreTrainedTokenizer = Tokenizer.from_pretrained(
+    tokenizer: PreTrainedTokenizerBase = T5Tokenizer.from_pretrained(
         Directories.LLM_DIR.joinpath(which_llm)
     )
-    model: PreTrainedModel = ForConditionalGeneration.from_pretrained(
-        fine_tuned_model
+    model: PreTrainedModel = T5ForConditionalGeneration.from_pretrained(
+        Directories.LLM_DIR.joinpath(which_llm)
     )
     model = model.to(DEVICE)  # send model to device
 
     # create a custom dataset
     # load them with DataLoader
-    df = read_training_dataset(
-        str(Directories.TRAIN_SETS_ID.joinpath(train_file))
-    )
+    df = read_training_dataset()
     training_set, val_set, train_params, val_params = create_dataset(
         wandb_init, df, tokenizer
     )
@@ -78,11 +77,3 @@ def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_mod
     validation.start_validation(
         wandb_init, wandb_init._config.VAL_EPOCHS, tokenizer, model, DEVICE, val_loader
     )
-
-def main_loop():
-    model_name = ("finetuned-mt5-id")
-    for idx, files in enumerate(Path(Directories.TRAIN_SETS_ID).iterdir()):
-        finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath(f"{model_name}-{idx - 1}")
-        if idx == 0:
-            finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath("trained-mt5-ID-test")
-        main("mt5-small", f"{model_name}-{idx}", files, finetuned_model, 3)
