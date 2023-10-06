@@ -1,4 +1,6 @@
-from abs_summarization.main import main
+from abs_summarization.main import main_loop
 
 if __name__ == '__main__':
-    main("t5-small", train_epoch=1, model_output="trained-model-t5-small-test1")
+    main_loop()
+    
+        
