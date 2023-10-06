@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 import torch
-from pathlib import Path
+from pathlib import Path, PurePath
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 from transformers import MT5ForConditionalGeneration as ForConditionalGeneration
-from transformers import MT5Tokenizer as Tokenizer
+from transformers import AutoTokenizer as Tokenizer
 from transformers.modeling_utils import PreTrainedModel
 from transformers import PreTrainedTokenizer
 
@@ -32,7 +32,12 @@ def save_model(model_output: str, model: PreTrainedModel) -> None:
     model.save_pretrained(Directories.TRAINED_MODEL_DIR.joinpath(model_output))
 
 
-def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_model: PurePath, train_epoch: int = 2):
+def main(
+    model_output: str,
+    train_file: PurePath,
+    fine_tuned_model: PurePath,
+    train_epoch: int = 2,
+):
     # start wandb
     wandb_init = Wandb_Init(model_output, train_epoch)
 
@@ -44,25 +49,22 @@ def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_mod
     # define tokenizer and model
     # https://huggingface.co/docs/transformers/model_doc/mt5#transformers.T5Tokenizer
     tokenizer: PreTrainedTokenizer = Tokenizer.from_pretrained(
-        Directories.LLM_DIR.joinpath(which_llm)
+        Directories.NEW_TOKENIZER
     )
-    model: PreTrainedModel = ForConditionalGeneration.from_pretrained(
-        fine_tuned_model
-    )
+    model: PreTrainedModel = ForConditionalGeneration.from_pretrained(fine_tuned_model)
     model = model.to(DEVICE)  # send model to device
 
     # create a custom dataset
     # load them with DataLoader
-    df = read_training_dataset(
-        str(Directories.TRAIN_SETS_ID.joinpath(train_file))
-    )
+    df = read_training_dataset(str(Directories.TRAIN_SETS_ID.joinpath(train_file)))
     training_set, val_set, train_params, val_params = create_dataset(
         wandb_init, df, tokenizer
     )
     training_loader = DataLoader(training_set, **train_params)
     val_loader = DataLoader(val_set, **val_params)
 
-    # Defining the optimizer that will be used to tune the weights of the network in the training session.
+    # Defining the optimizer that will be used to tune the weights of 
+    # the network in the training session.
     optimizer: Adam = torch.optim.Adam(
         params=model.parameters(), lr=wandb_init._config.LEARNING_RATE
     )
@@ -79,10 +81,13 @@ def main(which_llm: str, model_output: str, train_file: PurePath, fine_tuned_mod
         wandb_init, wandb_init._config.VAL_EPOCHS, tokenizer, model, DEVICE, val_loader
     )
 
+
 def main_loop():
-    model_name = ("finetuned-mt5-id")
+    model_name = "finetuned-mt5-id"
     for idx, files in enumerate(Path(Directories.TRAIN_SETS_ID).iterdir()):
-        finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath(f"{model_name}-{idx - 1}")
+        finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath(
+            f"{model_name}-{idx - 1}"
+        )
         if idx == 0:
-            finetuned_model = Directories.TRAINED_MODEL_DIR.joinpath("trained-mt5-ID-test")
-        main("mt5-small", f"{model_name}-{idx}", files, finetuned_model, 3)
+            finetuned_model = Directories.LLM_DIR.joinpath("mt5-small")
+        main(f"{model_name}-{idx}", files, finetuned_model, 1)
