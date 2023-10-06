@@ -30,7 +30,7 @@ def create_files(file_amt: int):
                 data["text"].append(slices.get("summary"))
                 data["ctext"].append(slices.get("text"))
             df = pd.DataFrame(data)
-            df.to_csv(f"id_train_{idx}.csv", sep=",")
+            df.to_csv(f"train_files/id_train_{idx}.csv", sep=",")
             data.clear()
         
-create_files(20)
+create_files(100)

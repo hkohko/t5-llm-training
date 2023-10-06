@@ -1,2 +1,3 @@
 # t5-llm-training
-this branch is dedicated to training the `mt5` model for the indonesian language.
+
+this branch is dedicated to fine-tuning the `mt5` model on indonesian language.

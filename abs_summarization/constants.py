@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from pathlib import PurePath
 
-from torch import cuda
-
 
 @dataclass
 class Directories:
@@ -12,9 +10,13 @@ class Directories:
     RESULT_DIR = PROJ_DIR.joinpath("model")
     TRAINED_MODEL_DIR = PROJ_DIR.joinpath("trained_model")
     TRAIN_SETS_ID = TRAIN_SETS.joinpath("id_training_data", "train_files")
+    TOKENIZER_FOLDER = PROJ_DIR.joinpath("tokenizer")
+    NEW_TOKENIZER = TOKENIZER_FOLDER.joinpath(
+        "trained_tokenizer", "mt5-small-id-tokenizer"
+    )
 
 
-DEVICE = "cuda" if cuda.is_available() else "cpu"
+DEVICE = "cpu"  #  "cuda" if cuda.is_available() else "cpu"
 DEBUG = True
 
 LANG = "ID"
