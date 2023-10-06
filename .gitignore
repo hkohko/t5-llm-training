@@ -11,6 +11,7 @@ abs_summarization/tokenizer/dataset/
 abs_summarization/tokenizer/trained_tokenizer/
 *.jsonl
 *.tar
+
 # C extensions
 *.so
 
