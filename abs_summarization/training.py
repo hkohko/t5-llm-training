@@ -17,7 +17,8 @@ def train(
     wandb_init: Wandb_Init,
 ) -> None:
     model.train()
-    for _, data in enumerate(loader, 0):
+
+    for idx, data in enumerate(loader, 0):
         y = data.get("target_ids").to(device, dtype=long)
         y_ids = y[:, :-1].contiguous()
         lm_labels = y[:, 1:].clone().detach()
@@ -36,13 +37,13 @@ def train(
 
         loss = outputs[0]
 
-        if _ % 10 == 0:
+        if idx % 10 == 0:
             try:
                 wandb_init.wandb.log({"Training Loss": loss.item()})
             except RuntimeError:
                 pass
 
-        if _ % 500 == 0:
+        if idx % 500 == 0:
             try:
                 print(f"Epoch: {epoch}, Loss: {loss.item()}")
             except RuntimeError:
