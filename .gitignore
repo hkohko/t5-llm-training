@@ -6,7 +6,9 @@ __pycache__/
 wandb/
 .idea/
 abs_summarization/trained_model/
-abs_summarization/training_set/
+abs_summarization/training_set
+abs_summarization/tokenizer/dataset/
+abs_summarization/tokenizer/trained_tokenizer/
 *.jsonl
 *.tar
 # C extensions
