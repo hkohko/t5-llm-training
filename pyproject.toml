@@ -1,16 +1,16 @@
 [tool.poetry]
 name = "abs-summarization"
 version = "0.1.0"
-description = ""
+description = "training language models of t5 flavour"
 authors = ["heko <91366057+hkohko@users.noreply.github.com>"]
+license = "MIT License"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
-transformers = {extras = ["torch"], version = "^4.33.3"}
-wandb = "^0.15.11"
-pandas = "2.1.0"
-sentencepiece = "^0.1.99"
+python = "^3.10"
+transformers = "^4.34.0"
+wandb = "^0.15.12"
+torch = { url = "https://download.pytorch.org/whl/cu118/torch-2.0.1%2Bcu118-cp311-cp311-win_amd64.whl" }
 
 
 [build-system]
